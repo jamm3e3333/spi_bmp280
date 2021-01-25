@@ -1,6 +1,6 @@
 #include <stdint.h>
 #define BMP280_CHIPID 0x58
-
+/*variables for bmp280*************************/
 /*!
  * Registers available on the sensor.
  */
@@ -107,3 +107,68 @@ enum sensor_sampling {
     /** 4000 ms standby. */
     STANDBY_MS_4000 = 0x07
 };
+
+  /** Encapsulates the config register */
+  struct config {
+    /** Inactive duration (standby time) in normal mode */
+    unsigned int t_sb : 3;
+    /** Filter settings */
+    unsigned int filter : 3;
+    /** Unused - don't set */
+    unsigned int none : 1;
+    /** Enables 3-wire SPI */
+    unsigned int spi3w_en : 1;
+    /** Used to retrieve the assembled config register's byte value. */
+  };
+
+  /** Encapsulates trhe ctrl_meas register */
+  struct ctrl_meas {
+    /** Temperature oversampling. */
+    unsigned int osrs_t : 3;
+    /** Pressure oversampling. */
+    unsigned int osrs_p : 3;
+    /** Device mode */
+    unsigned int mode : 2;
+    /** Used to retrieve the assembled ctrl_meas register's byte value. */
+  };
+
+  int32_t _sensorID;
+  int32_t t_fine;
+  int8_t _cs, _mosi, _miso, _sck;
+  bmp280_calib_data _bmp280_calib;
+  struct config _configReg;
+  struct ctrl_meas _measReg;
+
+/************************************************************/
+/*functions for bmp280***************************************/
+unsigned int get_meas(struct ctrl_meas _ctrl_meas) {
+    return (_ctrl_meas.osrs_t << 5) | (_ctrl_meas.osrs_p << 2) | _ctrl_meas.mode;
+    }
+unsigned int get_conf(struct config _conf) { 
+    return (_conf.t_sb << 5) | (_conf.filter << 2) | _conf.spi3w_en; 
+    }
+
+void write8(uint8_t _reg, uint8_t _data){
+    portc = 0x20;
+    SPI1_Write(_reg & ~0x80);
+    SPI1_Write(_data);
+    portc = 0x24;
+
+}
+
+void setSampling(enum sensor_mode mode,enum sensor_sampling tempSampling,enum sensor_sampling pressSampling,enum sensor_filter filter,enum standby_duration duration) {
+  _measReg.mode = mode;
+  _measReg.osrs_t = tempSampling;
+  _measReg.osrs_p = pressSampling;
+
+  _configReg.filter = filter;
+  _configReg.t_sb = duration;
+
+  write8(BMP280_REGISTER_CONFIG, get_conf(_configReg));
+  write8(BMP280_REGISTER_CONTROL, get_meas(_measReg));
+}
+
+void init(){
+    trisc = 0x28; 
+    SPI1_Iinit();
+}
