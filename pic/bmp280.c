@@ -1,174 +1,174 @@
 #include <stdint.h>
-#define BMP280_CHIPID 0x58
-/*variables for bmp280*************************/
-/*!
- * Registers available on the sensor.
- */
-enum {
-  BMP280_REGISTER_DIG_T1 = 0x88,
-  BMP280_REGISTER_DIG_T2 = 0x8A,
-  BMP280_REGISTER_DIG_T3 = 0x8C,
-  BMP280_REGISTER_DIG_P1 = 0x8E,
-  BMP280_REGISTER_DIG_P2 = 0x90,
-  BMP280_REGISTER_DIG_P3 = 0x92,
-  BMP280_REGISTER_DIG_P4 = 0x94,
-  BMP280_REGISTER_DIG_P5 = 0x96,
-  BMP280_REGISTER_DIG_P6 = 0x98,
-  BMP280_REGISTER_DIG_P7 = 0x9A,
-  BMP280_REGISTER_DIG_P8 = 0x9C,
-  BMP280_REGISTER_DIG_P9 = 0x9E,
-  BMP280_REGISTER_CHIPID = 0xD0,
-  BMP280_REGISTER_VERSION = 0xD1,
-  BMP280_REGISTER_SOFTRESET = 0xE0,
-  BMP280_REGISTER_CAL26 = 0xE1, /**< R calibration = 0xE1-0xF0 */
-  BMP280_REGISTER_STATUS = 0xF3,
-  BMP280_REGISTER_CONTROL = 0xF4,
-  BMP280_REGISTER_CONFIG = 0xF5,
-  BMP280_REGISTER_PRESSUREDATA = 0xF7,
-  BMP280_REGISTER_TEMPDATA = 0xFA,
-};
+#define  NULL                  0
+#define  IN_OUT_TERMINATOR     "~"//126
+#define  VELIKOST_BUFFER       10
+int32_t tepl;
+float temp_f;
+unsigned char temp_c[8];
+unsigned char temp_w[6];
+unsigned char temp_i[7];
+unsigned char temp32_c[11];
+unsigned char temp32i_c[12];
+unsigned char temp_float[14];
+uint8_t temp3;
 
-/*!
- *  Struct to hold calibration data.
- */
-typedef struct {
-  uint16_t dig_T1; /**< dig_T1 cal register. */
-  int16_t dig_T2;  /**<  dig_T2 cal register. */
-  int16_t dig_T3;  /**< dig_T3 cal register. */
+uint16_t temp16_1;
+int16_t temp16_2;
+int16_t temp16_3;
 
-  uint16_t dig_P1; /**< dig_P1 cal register. */
-  int16_t dig_P2;  /**< dig_P2 cal register. */
-  int16_t dig_P3;  /**< dig_P3 cal register. */
-  int16_t dig_P4;  /**< dig_P4 cal register. */
-  int16_t dig_P5;  /**< dig_P5 cal register. */
-  int16_t dig_P6;  /**< dig_P6 cal register. */
-  int16_t dig_P7;  /**< dig_P7 cal register. */
-  int16_t dig_P8;  /**< dig_P8 cal register. */
-  int16_t dig_P9;  /**< dig_P9 cal register. */
-} bmp280_calib_data;
+int32_t adc_t, t_fine;
 
-enum sensor_sampling {
-    /** No over-sampling. */
-    SAMPLING_NONE = 0x00,
-    /** 1x over-sampling. */
-    SAMPLING_X1 = 0x01,
-    /** 2x over-sampling. */
-    SAMPLING_X2 = 0x02,
-    /** 4x over-sampling. */
-    SAMPLING_X4 = 0x03,
-    /** 8x over-sampling. */
-    SAMPLING_X8 = 0x04,
-    /** 16x over-sampling. */
-    SAMPLING_X16 = 0x05
-};
+// Ukazatele na pole
+char* pInPole =  NULL, pOutPole =  NULL;
+// Vstupni/Vystupni buffer
+char InPole[VELIKOST_BUFFER];
+char OutPole[VELIKOST_BUFFER];
 
-  /** Operating mode for the sensor. */
-  enum sensor_mode {
-    /** Sleep mode. */
-    MODE_SLEEP = 0x00,
-    /** Forced mode. */
-    MODE_FORCED = 0x01,
-    /** Normal mode. */
-    MODE_NORMAL = 0x03,
-    /** Software reset. */
-    MODE_SOFT_RESET_CODE = 0xB6
-  };
+char Zarizeni, Adresa, Sta, Des, Jed, CRC;
+unsigned char buffer;
+uint8_t status_reg;
 
-  /** Filtering level for sensor data. */
-  enum sensor_filter {
-    /** No filtering. */
-    FILTER_OFF = 0x00,
-    /** 2x filtering. */
-    FILTER_X2 = 0x01,
-    /** 4x filtering. */
-    FILTER_X4 = 0x02,
-    /** 8x filtering. */
-    FILTER_X8 = 0x03,
-    /** 16x filtering. */
-    FILTER_X16 = 0x04
-  };
+void init(void);
+void Prijem(void);
+int Prevod(char sta,char des,char jed);
+int32_t vypocet_temp(int32_t temperature){
+ int32_t var1, var2, T, t_fine;
+ var1 = ((((temperature/8) - ((int32_t)temp16_1*2)))*((int32_t)temp16_2))/2048;
+ var2 = (((((temperature/16)-((int32_t)temp16_1))*((temperature/16)-((int32_t)temp16_1)))/4096)*((int32_t)temp16_3))/16384;
+ t_fine = var1 + var2;
+ T = ((t_fine*5)+128) /256;
+ return T;
+}
 
-  /** Standby duration in ms */
-  enum standby_duration {
-    /** 1 ms standby. */
-    STANDBY_MS_1 = 0x00,
-    /** 62.5 ms standby. */
-    STANDBY_MS_63 = 0x01,
-    /** 125 ms standby. */
-    STANDBY_MS_125 = 0x02,
-    /** 250 ms standby. */
-    STANDBY_MS_250 = 0x03,
-    /** 500 ms standby. */
-    STANDBY_MS_500 = 0x04,
-    /** 1000 ms standby. */
-    STANDBY_MS_1000 = 0x05,
-    /** 2000 ms standby. */
-    STANDBY_MS_2000 = 0x06,
-    /** 4000 ms standby. */
-    STANDBY_MS_4000 = 0x07
-};
+void main() {
+     init();
+     do
+       {
+        Prijem();
+        switch (Adresa)
+             {
+             /*nastaveni bitu*/
+             case 'A':
+                  //nacteni surovych dat pro teplotu
+                  portc = 0x20;
+                  SPI1_Write(0xF7);
+                  adc_t = SPI1_Read(buffer);
+                  adc_t = adc_t << 8;
+                  
+                  SPI1_Write(0xF8);
+                  adc_t = adc_t | SPI1_Read(buffer);
+                  adc_t = adc_t << 8;
+                  
+                  SPI1_Write(0xF9);
+                  temp3 = SPI1_Read(buffer);
+                  adc_t = adc_t | (temp3 >> 4);
+                  portc = 0x24;
+                  delay_ms(100);
+                  //konec nacitani dat
 
-  /** Encapsulates the config register */
-  struct config {
-    /** Inactive duration (standby time) in normal mode */
-    unsigned int t_sb : 3;
-    /** Filter settings */
-    unsigned int filter : 3;
-    /** Unused - don't set */
-    unsigned int none : 1;
-    /** Enables 3-wire SPI */
-    unsigned int spi3w_en : 1;
-    /** Used to retrieve the assembled config register's byte value. */
-  };
+                  //nacitani kalibracnich registru
+                  portc = 0x20;
+                  SPI1_Write(0x88);
+                  temp16_1 = SPI1_Read(buffer);
+                  temp16_1 = temp16_1 << 8;
+                  
+                  SPI1_Write(0x89);
+                  temp16_1 = temp16_1 | SPI1_Read(buffer);
 
-  /** Encapsulates trhe ctrl_meas register */
-  struct ctrl_meas {
-    /** Temperature oversampling. */
-    unsigned int osrs_t : 3;
-    /** Pressure oversampling. */
-    unsigned int osrs_p : 3;
-    /** Device mode */
-    unsigned int mode : 2;
-    /** Used to retrieve the assembled ctrl_meas register's byte value. */
-  };
+                  SPI1_Write(0x8A);
+                  temp16_2 = SPI1_Read(buffer);
+                  temp16_2 = temp16_2 << 8;
+                  
+                  SPI1_Write(0x8B);
+                  temp16_2 = temp16_2 | SPI1_Read(buffer);
 
-  int32_t _sensorID;
-  int32_t t_fine;
-  int8_t _cs, _mosi, _miso, _sck;
-  bmp280_calib_data _bmp280_calib;
-  struct config _configReg;
-  struct ctrl_meas _measReg;
+                  SPI1_Write(0x8C);
+                  temp16_3 = SPI1_Read(buffer);
+                  temp16_3 = temp16_3 << 8;
+                  
+                  SPI1_Write(0x8D);
+                  temp16_3 = temp16_3 | SPI1_Read(buffer);
+                  portc = 0x24;
 
-/************************************************************/
-/*functions for bmp280***************************************/
-unsigned int get_meas(struct ctrl_meas _ctrl_meas) {
-    return (_ctrl_meas.osrs_t << 5) | (_ctrl_meas.osrs_p << 2) | _ctrl_meas.mode;
+                  UART1_Write(13);
+                  delay_ms(500);
+                  tepl = vypocet_temp(adc_t);
+                  temp_f = (float)tepl*0.0025;
+                  FloatToStr(temp_f,temp_float);
+                  UART1_Write_Text(temp_float);
+                  UART1_Write(13);
+                  //konec nacitani kalibracnich regitru
+                  delay_ms(1500);
+                  break;
+               }
+        Adresa=0;
+       } while(1);
     }
-unsigned int get_conf(struct config _conf) { 
-    return (_conf.t_sb << 5) | (_conf.filter << 2) | _conf.spi3w_en; 
+/*******************************************************/
+void init(void)
+     {
+     //nastaveni vstupu a vystuu
+     trisc = 0x28;
+     pInPole  = &InPole[0];
+     pOutPole = &OutPole[0];
+     //inicializace uart komunikace
+     UART1_Init(9600);
+     //incializace spi komunikace
+     SPI1_Init();
+     //soft reset
+     portc = 0x20;
+     SPI1_Write(0xE0);
+     SPI1_Write(0xB6);
+     portc = 0x24;
+     Delay_ms(100);
+     portc = 0x20;
+     SPI1_Write(0xE0);
+     SPI1_Write(0x00);
+     portc = 0x24;
+     delay_ms(100);
+     //cekani na nacteni dat z NVM ro registru
+     do{
+       portc = 0x20;
+       SPI1_Write(0xF3);
+       status_reg = SPI1_Read(buffer);
+       portc = 0x24;
+       delay_ms(100);
+     }while((status_reg & 0x01) == 0x01);
+
+     //konfiguarce registru 0xF4 (mod, vzorkovani dat pro teplotu a tlak)
+     portc = 0x20;
+     SPI1_Write(0xF4);
+     SPI1_Write((0x03 | (0x03 << 5))& 0xFF);
+     portc = 0x24;
+     delay_ms(100);
+     
+     //konfigurace registru 0xF5 (prodleva, filtr, spi-3 piny)
+     portc = 0x20;
+     SPI1_Write(0xF5);
+     SPI1_Write((0x06 << 5) & 0xE0);
+     portc = 0x24;
+     delay_ms(100);
+     
+     return;
+     }
+/*******************************************************/
+void Prijem(void)
+     {
+     if (UART1_Data_Ready() == 1) {          // Jsou Data?
+          UART1_Read_Text(pInPole, IN_OUT_TERMINATOR, VELIKOST_BUFFER);
+          Zarizeni=InPole[0];
+          Adresa=InPole[1];
+          Sta=InPole[2];
+          Des=InPole[3];
+          Jed=InPole[4];
+          CRC=InPole[5];
+        }
+     return;
+     }
+/*******************************************************/
+int Prevod(char sta,char des,char jed)
+    {
+    int vystup;
+    vystup = (sta-48)*100+(des-48)*10+(jed-48);
+    return vystup;
     }
-
-void write8(uint8_t _reg, uint8_t _data){
-    portc = 0x20;
-    SPI1_Write(_reg & ~0x80);
-    SPI1_Write(_data);
-    portc = 0x24;
-
-}
-
-void setSampling(enum sensor_mode mode,enum sensor_sampling tempSampling,enum sensor_sampling pressSampling,enum sensor_filter filter,enum standby_duration duration) {
-  _measReg.mode = mode;
-  _measReg.osrs_t = tempSampling;
-  _measReg.osrs_p = pressSampling;
-
-  _configReg.filter = filter;
-  _configReg.t_sb = duration;
-
-  write8(BMP280_REGISTER_CONFIG, get_conf(_configReg));
-  write8(BMP280_REGISTER_CONTROL, get_meas(_measReg));
-}
-
-void init(){
-    trisc = 0x28; 
-    SPI1_Iinit();
-}
