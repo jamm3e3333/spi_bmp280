@@ -14,7 +14,7 @@ unsigned char temp_i[7];
 unsigned char temp32_c[11];
 unsigned char temp32i_c[12];
 unsigned char temp_float[14];
-uint8_t temp3;
+uint8_t temp1, temp2, temp3;
 
 uint16_t temp16_1;
 int16_t temp16_2;
@@ -31,6 +31,21 @@ char OutPole[VELIKOST_BUFFER];
 char Zarizeni, Adresa, Sta, Des, Jed, CRC;
 unsigned char buffer;
 uint8_t status_reg;
+
+void write8(unsigned char _reg_add, unsigned char _data){
+    portc.f2 = 0;
+    SPI1_Write(_reg_add);
+    SPI1_Write(_data);
+    portc.f2 = 1;
+}
+
+uint8_t read8(uint8_t _reg_add){
+    uint8_t data_temp;
+    portc.f2 = 0;
+    SPI1_Write(_reg_add);
+    data_temp = SPI1_Read(buffer);
+    portc.f2 = 1;
+}
 
 /*******************************************************/
 void init(void)
@@ -64,20 +79,6 @@ void init(void)
      return;
      }
 
-void write8(unsigned char _reg_add, unsigned char _data){
-    portc.f2 = 0;
-    SPI1_Write(_reg_add);
-    SPI1_Write(_data);
-    portc.f2 = 1;
-}
-
-uint8_t read8(uint8_t _reg_add){
-    uint8_t data_temp;
-    portc.f2 = 0;
-    SPI1_Write(_reg_add);
-    data_temp = SPI1_Read(buffer);
-    portc.f2 = 1;
-}
 /*******************************************************/
 void Prijem(void)
      {
@@ -119,7 +120,21 @@ void main() {
              {
              /*nastaveni bitu*/
              case 'A':
-                temp3 = read8(0xF7);    
+                temp3 = read8(0xF7);   
+                delay_ms(100);
+                temp2 = read8(0xF8);
+                delay_ms(100);
+                temp3 = read8(0xF9);
+                delay_ms(100);
+                
+                ByteToStr(temp1,temp_b);
+                UART1_Write_Text(temp_b);
+                UART1_Write(13);
+
+                ByteToStr(temp2,temp_b);
+                UART1_Write_Text(temp_b);
+                UART1_Write(13);
+
                 ByteToStr(temp3,temp_b);
                 UART1_Write_Text(temp_b);
                 UART1_Write(13);
