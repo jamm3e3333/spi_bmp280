@@ -3,22 +3,18 @@
 #define  IN_OUT_TERMINATOR     "~"//126
 #define  VELIKOST_BUFFER       10
 
-int32_t tepl;
+int32_t tepl, tlak;
 float temp_f;
 
-unsigned char temp_b[4];
-unsigned char temp_s[5];
-unsigned char temp_c[8];
-unsigned char temp_w[6];
-unsigned char temp_i[7];
-unsigned char temp32_c[11];
-unsigned char temp32i_c[12];
-unsigned char temp_float[14];
-uint8_t temp1, temp2, temp3;
+unsigned char temp_b[12];
+
+uint16_t temp[3];
+uint16_t press[3];
 
 uint16_t temp16_1;
-int16_t temp16_2;
-int16_t temp16_3;
+int16_t temp16_2[2];
+uint16_t press16_1;
+int16_t press16_2[8];
 
 int32_t temperature, t_fine;
 
@@ -32,50 +28,142 @@ char Zarizeni, Adresa, Sta, Des, Jed, CRC;
 unsigned char buffer;
 uint8_t status_reg;
 
-void write8(unsigned char _reg_add, unsigned char _data){
-    portc.f2 = 0;
-    SPI1_Write(_reg_add);
-    SPI1_Write(_data);
-    portc.f2 = 1;
-}
-
-uint8_t read8(uint8_t _reg_add){
-    uint8_t data_temp;
-    portc.f2 = 0;
-    SPI1_Write(_reg_add);
-    data_temp = SPI1_Read(buffer);
-    portc.f2 = 1;
-}
-
 /*******************************************************/
 void init(void)
      {
+     SSPSTAT = 0x00;
+     SSPCON = 0x20;
      //nastaveni vstupu a vystuu
      trisc = 0x10;
-     SPI1_Init();
-     portc.f2 = 1;
-     
+     trisb = 0x00;
+     portb = 0x01;
+
      pInPole  = &InPole[0];
      pOutPole = &OutPole[0];
      //inicializace uart komunikace
      UART1_Init(9600);
+     SPI1_Init();
+     delay_ms(100);
      //soft reset
-     write8(0xE0,0xB6);
+     portb = 0x00;
+     SPI1_Write(0xE0);
+     SPI1_Write(0xB6);
+     portb = 0x01;
      delay_ms(100);
      //cekani na nacteni dat z NVM ro registru
      do{
-       status_reg = read8(0xF3);
+        portb = 0x00;
+        SPI1_Read(0xF3);
+        status_reg = SPI1_Read(buffer);
+        portb = 0x01;
        delay_ms(100);
      }while((status_reg & 0x01) == 0x01);
 
+     //nastaveni ctrl registru 0xF4
+     portb = 0x00;
+     SPI1_Write(0xF4);
+     SPI1_Write((((0x02<<5) | (0x05<<2)) | (0x03)) & 0xFF);
      //nastaveni cfg registru 0xF5
-     write8(0xF5,((0x04<<5) |  (0x05<<2)) & 0xFF);
+     SPI1_Write(0xF5);
+     SPI1_Write(((0x04<<5) |  (0x00<<2)) & 0xFF);
+     portb = 0x01;
+
+     portb = 0x00;
+     SPI1_Read(0x88);
+     temp16_1 = SPI1_Read(buffer);
+     temp16_1 = temp16_1 << 8;
+     temp16_1 = SPI1_Read(buffer);
+     portb = 0x01;
      delay_ms(100);
 
-    //nastaveni ctrl registru 0xF4
-     write8(0xF4,(((0x02<<5) | (0x05<<2)) | (0x03)) & 0xFF);
+     portb = 0x00;
+     SPI1_Read(0x8A);
+     temp16_2[0] = SPI1_Read(buffer);
+     temp16_2[0] = temp16_2[0] << 8;
+     temp16_2[0] = SPI1_Read(buffer);
+     portb = 0x01;
      delay_ms(100);
-     
+
+     portb = 0x00;
+     SPI1_Read(0x8C);
+     temp16_2[1] = SPI1_Read(buffer);
+     temp16_2[1] = temp16_2[1] << 8;
+     temp16_2[1] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x8E);
+     press16_1 = SPI1_Read(buffer);
+     press16_1 = press16_1 << 8;
+     press16_1 = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x90);
+     press16_2[0] = SPI1_Read(buffer);
+     press16_2[0] = press16_2[0] << 8;
+     press16_2[0] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x92);
+     press16_2[1] = SPI1_Read(buffer);
+     press16_2[1] = press16_2[1] << 8;
+     press16_2[1] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x94);
+     press16_2[2] = SPI1_Read(buffer);
+     press16_2[2] = press16_2[2] << 8;
+     press16_2[2] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x96);
+     press16_2[3] = SPI1_Read(buffer);
+     press16_2[3] = press16_2[3] << 8;
+     press16_2[3] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x98);
+     press16_2[4] = SPI1_Read(buffer);
+     press16_2[4] = press16_2[4] << 8;
+     press16_2[4] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x9A);
+     press16_2[5] = SPI1_Read(buffer);
+     press16_2[5] = press16_2[5] << 8;
+     press16_2[5] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x9C);
+     press16_2[6] = SPI1_Read(buffer);
+     press16_2[6] = press16_2[6] << 8;
+     press16_2[6] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
+     portb = 0x00;
+     SPI1_Read(0x9E);
+     press16_2[7] = SPI1_Read(buffer);
+     press16_2[7] = press16_2[7] << 8;
+     press16_2[7] = SPI1_Read(buffer);
+     portb = 0x01;
+     delay_ms(100);
+
      return;
      }
 
@@ -120,25 +208,56 @@ void main() {
              {
              /*nastaveni bitu*/
              case 'A':
-                temp3 = read8(0xF7);   
+                portb = 0x00;
+                SPI1_Read(0xF7);
+                temp[0] = SPI1_Read(buffer);
+                temp[1] = SPI1_Read(buffer);
+                portb = 0x01;
                 delay_ms(100);
-                temp2 = read8(0xF8);
-                delay_ms(100);
-                temp3 = read8(0xF9);
+
+                portb = 0x00;
+                SPI1_Read(0xF9);
+                temp[2] = SPI1_Read(buffer);
+                portb = 0x01;
                 delay_ms(100);
                 
-                ByteToStr(temp1,temp_b);
+                portb = 0x00;
+                SPI1_Read(0xFA);
+                press[0] = SPI1_Read(buffer);
+                press[1] = SPI1_Read(buffer);
+                portb = 0x01;
+                delay_ms(100);
+                
+                portb = 0x00;
+                SPI1_Read(0xFC);
+                press[2] = SPI1_Read(buffer);
+                portb = 0x01;
+                delay_ms(100);
+
+                temp[0] = temp[0] << 8;
+                temp[1] = temp[1] << 8;
+                temp[2] = temp[2] >> 4;
+                
+                press[0] = press[0] << 8;
+                press[1] = press[1] << 8;
+                press[2] = press[2] >> 4;
+
+                tepl = temp[0];
+                tepl = tepl << 8;
+                tepl = (tepl | temp[1]) | temp[2];
+
+                tlak = press[0];
+                tlak = tlak << 8;
+                tlak = (tlak | press[1]) | press[2];
+
+                LongToStr(tepl,temp_b);
+                UART1_Write_Text(temp_b);
+                UART1_Write(13);
+                
+                LongToStr(tlak,temp_b);
                 UART1_Write_Text(temp_b);
                 UART1_Write(13);
 
-                ByteToStr(temp2,temp_b);
-                UART1_Write_Text(temp_b);
-                UART1_Write(13);
-
-                ByteToStr(temp3,temp_b);
-                UART1_Write_Text(temp_b);
-                UART1_Write(13);
-                //konec nacitani kalibracnich regitru
                 delay_ms(500);
                 break;
                }
