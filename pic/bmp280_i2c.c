@@ -138,49 +138,49 @@ void main(){
      switch (Adresa){
           case 'Z':
 
-          I2C1_Start();
-          I2C1_Wr(0x76);
-          I2C1_Wr(0xFA);
-          I2C1_Start();
-          I2C1_Wr(0x76); 
-          temp16[0] = I2C1_Rd(1);
-          temp16[1] = I2C1_Rd(0);
-          I2C1_Stop();
-          delay_ms(100);
+          // I2C1_Start();
+          // I2C1_Wr(0x76);
+          // I2C1_Wr(0xFA);
+          // I2C1_Start();
+          // I2C1_Wr(0x76); 
+          // temp16[0] = I2C1_Rd(1);
+          // temp16[1] = I2C1_Rd(0);
+          // I2C1_Stop();
+          // delay_ms(100);
 
-          I2C1_Start();
-          I2C1_Wr(0x76);
-          I2C1_Wr(0xFC);
-          I2C1_Start();
-          I2C1_Wr(0x76);
-          temp16[2] = I2C1_Rd(1);
-          I2C1_Stop();
-          delay_ms(100);
+          // I2C1_Start();
+          // I2C1_Wr(0x76);
+          // I2C1_Wr(0xFC);
+          // I2C1_Start();
+          // I2C1_Wr(0x76);
+          // temp16[2] = I2C1_Rd(1);
+          // I2C1_Stop();
+          // delay_ms(100);
 
-          temp16[2] = temp16[2] >> 4;
-          temp16[1] = temp16[1] << 8;
-          tepl = temp16[0];
-          tepl = tepl << 16;
+          // temp16[2] = temp16[2] >> 4;
+          // temp16[1] = temp16[1] << 8;
+          // tepl = temp16[0];
+          // tepl = tepl << 16;
 
-          tepl = (tepl | temp16[1]) | temp16[2];
+          // tepl = (tepl | temp16[1]) | temp16[2];
 
-          LongToStr(tepl,temp_l);
-          UART1_Write_Text(temp_l);
+          // LongToStr(tepl,temp_l);
+          // UART1_Write_Text(temp_l);
+          // UART1_Write(13);
+
+          WordToStr(T1[0],temp_w);
+          UART1_Write_Text(temp_w);
           UART1_Write(13);
+          delay_ms(100);
 
-          // WordToStr(T1[0],temp_w);
-          // UART1_Write_Text(temp_w);
-          // UART1_Write(13);
-          // delay_ms(100);
+          IntToStr(T2[0],temp_i);
+          UART1_Write_Text(temp_i);
+          UART1_Write(13);
+          delay_ms(100);
 
-          // IntToStr(T2[0],temp_i);
-          // UART1_Write_Text(temp_i);
-          // UART1_Write(13);
-          // delay_ms(100);
-
-          // IntToStr(T2[2],temp_i);
-          // UART1_Write_Text(temp_i);
-          // UART1_Write(13);
+          IntToStr(T2[2],temp_i);
+          UART1_Write_Text(temp_i);
+          UART1_Write(13);
 
           break;
      }
