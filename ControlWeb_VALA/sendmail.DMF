@@ -1,0 +1,20 @@
+begin
+  1 real input
+  2 boolean output
+  3 real input
+  4 real input
+  6 real input
+  7 string input
+  11 real input
+  12 boolean output
+  13 real input
+  14 boolean output
+  15 real input
+  20 string input
+  21 real input
+  22 string output
+  23 string output
+  24 real output
+  25 real output
+  26 boolean output
+end.
