@@ -1,4 +1,4 @@
---------------------------------------------------
+﻿--------------------------------------------------
 
 0x88..0x8D - calibration registers for temperature
 0xF7..0xF9 - data registers for temperature
@@ -6,7 +6,7 @@
 
 --------------------------------------------------
 
-connection
+connection I2C
 ==================================================
 
 RC2 - CS  - 0 (IF PIC IS MASTER)
@@ -21,6 +21,37 @@ RC5 - SDO - 0
 trisc = 0x18 -> 0 b x x 0 1_1 0 x x
 
 CS LOW -> 0x20;
+CS HIGH -> 0x00;
+
+CKP = 1
+CKE = 0
+
+
+		      7 6 5 4 3 2 1 0
+		      _ _ _ _ _ _ _ _
+SSPSTAT = 0x00 -> 0 b 0 0 x x_x x x x
+
+		      7 6 5 4 3 2 1 0
+		      _ _ _ _ _ _ _ _
+SSPCON = 0x20 ->  0 b x x 1 0_0 0 0 0
+
+--------------------------------------------------
+
+connection SPI
+==================================================
+
+RC2 - CS  - 0 (IF PIC IS MASTER)
+RC3 - SCK - 0 (IF PIC IS MASTER)
+RC4 - SDA - 1
+RC5 - SDO - 0
+
+0 - OUTPUT, 1 - INPUT
+
+		    7 6 5 4 3 2 1 0
+		    _ _ _ _ _ _ _ _
+trisc = 0x20 -> 0 b x x 1 0_0 0 x x
+
+CS LOW -> 0x04;
 CS HIGH -> 0x00;
 
 CKP = 1
